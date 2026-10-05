@@ -40,7 +40,7 @@ def hp_ratio(hp, max_hp):
 
 
 def status_report(name, robot_type, hp, max_hp, battery):
-    if battery >= 75:
+    if battery >= 60:
         battery_status = "OK"
     elif battery >= 20:
         battery_status = "WARNING"
@@ -55,14 +55,86 @@ def status_report(name, robot_type, hp, max_hp, battery):
 
 
 def analyze_damage_log(lines):
-    """TODO(Q2)：解析混合格式伤害日志，返回固定契约的统计 dict；
+    """Q2：解析混合格式伤害日志，返回固定契约的统计 dict；
     行格式、去重与统计口径见题面 Q2 规范。"""
-    raise NotImplementedError("Q2 analyze_damage_log：题面 Q2·多源日志解析与统计")
-
+    total = 0
+    by_armor = {"front": 0, "left": 0, "right": 0}
+    seen_ids = set()
+    event_count = 0
+    armor_map = {"F": "front", "L": "left", "R": "right"}
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("{"):
+            # JSON 行
+            try:
+                data = json.loads(line)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            armor = data.get("armor")
+            damage = data.get("damage")
+            if armor not in ("front", "left", "right"):
+                continue
+            if type(damage) is not int or damage <= 0:
+                continue
+            if "id" in data:
+                rid = data["id"]
+                if rid in seen_ids:
+                    continue
+                seen_ids.add(rid)
+            total += damage
+            by_armor[armor] += damage
+            event_count += 1
+            continue
+        # 传感器行 "F:32,L:5,R:12"，段允许缺失
+        segments = line.split(",")
+        parsed = []
+        ok = True
+        for seg in segments:
+            seg = seg.strip()
+            if ":" not in seg:
+                ok = False
+                break
+            parts = seg.split(":")
+            if len(parts) != 2:
+                ok = False
+                break
+            letter, num_str = parts
+            if letter not in ("F", "L", "R") or not num_str.isdigit():
+                ok = False
+                break
+            num = int(num_str)
+            if num <= 0:
+                ok = False
+                break
+            parsed.append((armor_map[letter], num))
+        if not ok:
+            continue
+        for armor, num in parsed:
+            total += num
+            by_armor[armor] += num
+            event_count += 1
+    if event_count == 0:
+        most_hit = None
+        avg = 0.0
+    else:
+        most_hit = max(by_armor, key=by_armor.get)
+        avg = total / event_count
+    return {
+        "total": total,
+        "by_armor": by_armor,
+        "most_hit": most_hit,
+        "avg": avg,
+    }
 
 # ---------------------------------------------------------------------------
 # Q3 SentryGrid（题面 Q3·载体物理规则）
 # ---------------------------------------------------------------------------
+
+
 class SentryGrid:
     """哨兵仿真载体（构造与只读属性已提供；四个 TODO 方法由你实现）。"""
 
