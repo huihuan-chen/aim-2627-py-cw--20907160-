@@ -35,23 +35,25 @@ class Facing(Enum):
 # Q1 机器人自检（题面 Q1·自检状态计算与报告生成）
 # ---------------------------------------------------------------------------
 def hp_ratio(hp, max_hp):
-    ratio=int(hp / max_hp * 100) if max_hp > 0 else 0
+    ratio = int(hp / max_hp * 100) if max_hp > 0 else 0
     return max(0, min(100, ratio))
-   
+
 
 def status_report(name, robot_type, hp, max_hp, battery):
-    if battery>=75:
-        battery_status="OK"
-    elif battery>=20:
-        battery_status="WARNING"
+    if battery >= 75:
+        battery_status = "OK"
+    elif battery >= 20:
+        battery_status = "WARNING"
     else:
-        battery_status="LOW"
+        battery_status = "LOW"
     hp_pct = hp_ratio(hp, max_hp)
     return f"{name:<10}|{robot_type:^10}|HP {hp_pct:>3}%|BAT {battery:>3}%|{battery_status}"
 
-       # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
 # Q2 战斗日志分析（题面 Q2·多源日志解析与统计）
 # ---------------------------------------------------------------------------
+
+
 def analyze_damage_log(lines):
     """TODO(Q2)：解析混合格式伤害日志，返回固定契约的统计 dict；
     行格式、去重与统计口径见题面 Q2 规范。"""
