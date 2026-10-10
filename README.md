@@ -68,3 +68,16 @@ python main.py
 
 CI 只允许修改 `src/main/**`、`README.md` 与 `.agent-sessions/**`（AI 会话归档）——其余文件改了直接红；autopep8 `--diff` 非空即败。提交方式（push、问卷、commit 粒度）见题面"提交与验收"一节。
 
+## Q7 修复记录（legacy_patrol.py）
+
+按题面 Q7 要求逐条记录 6 处 bug 的定位与修复：
+
+1. **`total_route_meters`**：`segment_length_cm` 返回厘米，但该函数按"米"累加导致数值放大 100 倍（`[(0,0),(3,0),(3,4)]` 应得 7m 实得 700）——修复：累加时除以 100 转米。
+2. **`calibrate`**：样本无正数时 `first_positive` 返回 `None`，`s - None` 抛 TypeError——修复：baseline 为 `None` 时直接返回 0。
+3. **`log`**：`history=[]` 可变默认参数被多次调用共享——修复：改用 `None` 哨兵，每次调用从空列表开始。
+4. **`summarize_events`**：契约是"id **不超过** max_id"，实现写成 `<`（严格小于）漏掉 `id == max_id` 的事件——修复：改为 `<=`。
+5. **`run_legacy_sim`**：循环内 `round_` 从不递增，死循环导致 MemoryError——修复：非终止轮末尾 `round_ += 1`。
+6. **`run_legacy_sim`**：终止条件写反（`stamina > 20` 才 break），契约是体力 `<= 20` 立即终止——修复：条件反转为 `<=`。
+
+定位方法：对照 `src/tests/test_legacy.py` 可见测试与各函数 docstring 契约，逐函数用 pytest 单测驱动定位；修复后全量 `python -m pytest` 转绿（21 passed）。
+
